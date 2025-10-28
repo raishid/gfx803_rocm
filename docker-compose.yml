@@ -1,5 +1,5 @@
 services:
-  ollama_rom64:
+  ollama_rocm64:
     build:
       context: .
       dockerfile: Dockerfile_rocm64_ollama
@@ -17,8 +17,12 @@ services:
       - SYS_PTRACE
     security_opt:
       - seccomp=unconfined
+    environment:
+      HSA_OVERRIDE_GFX_VERSION: "8.0.3"
+      ROC_ENABLE_PRE_VEGA: "1"
+      HIP_VISIBLE_DEVICES: "0"
     volumes:
-     - ollama_data:/root/.ollama
+      - ollama_data:/root/.ollama
 
 volumes:
   ollama_data:
