@@ -41,4 +41,4 @@ fi
 
 docker build -f Dockerfile_rocm64_base . -t 'rocm6_gfx803_base:6.4'
 
-docker compose -f docker-compose.yml up -d
+# docker compose -f docker-compose.yml up -d
