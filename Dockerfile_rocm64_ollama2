@@ -41,7 +41,11 @@ RUN echo "REPLACE Ollama Source for gfx803"  && \
 
 ## Compile Ollama for ROCm (gfx803)
 RUN echo "BUILDING Ollama for gfx803 (HIP backend)" && \
-    cmake -B build -DAMDGPU_TARGETS="gfx803" -DGGML_HIPBLAS=ON && \
+    cmake -B build \
+      -DAMDGPU_TARGETS="gfx803" \
+      -DGGML_HIPBLAS=ON \
+      -Dhip_DIR=/opt/rocm/lib/cmake/hip \
+      -DCMAKE_PREFIX_PATH="/opt/rocm/lib/cmake;/opt/rocm" && \
     cmake --build build -- -j$(nproc) && \
     true
 
