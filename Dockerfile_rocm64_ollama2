@@ -47,7 +47,9 @@ RUN echo "BUILDING Ollama for gfx803 (HIP backend)" && \
       -Dhip_DIR=/opt/rocm/lib/cmake/hip \
       -DCMAKE_PREFIX_PATH="/opt/rocm/lib/cmake;/opt/rocm" && \
     cmake --build build -- -j$(nproc) && \
+    cp build/bin/ollama /ollama/ollama && \
     true
+
 
 ### Create a best practice Shell Script to start Ollama
 RUN touch ol_serve.sh && \
