@@ -1,0 +1,77 @@
+# Utilizamos una imagen base con ROCm y Ubuntu 24.04
+FROM rocm/dev-ubuntu-24.04:6.4-complete
+
+# Actualizamos el sistema
+RUN apt-get update && apt-get upgrade -y
+
+# Instalamos las dependencias necesarias
+RUN apt-get install -y \
+    cmake \
+    make \
+    git \
+    wget \
+    build-essential \
+    libvulkan-dev \
+    vulkan-utils \
+    python3-pip \
+    python3-dev \
+    libcurl4-openssl-dev \
+    libtcmalloc-minimal4 \
+    libprotobuf-dev \
+    libvulkan-tools \
+    clang \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instalar CUDA y ROCm
+RUN echo "deb [arch=amd64] https://repo.radeon.com/rocm/apt/deb/ stable main" | tee /etc/apt/sources.list.d/rocm.list
+RUN apt-get update && apt-get install -y rocm-dkms
+
+# Variables de entorno para ROCm y Vulkan
+ENV MAX_JOBS=14
+ENV ROCM_ARCH=gfx803
+ENV PYTORCH_ROCM_ARCH=gfx803
+ENV TORCH_BLAS_PREFER_HIPBLASLT=0
+ENV ROC_ENABLE_PRE_VEGA=1
+ENV USE_CUDA=0
+ENV USE_ROCM=1
+ENV USE_NINJA=1
+ENV FORCE_CUDA=1
+ENV JOBLIB_START_METHOD=thread
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONENCODING=UTF-8
+ENV REQS_FILE=requirements.txt
+ENV PIP_ROOT_USER_ACTION=ignore
+
+# Clonamos el repositorio de Ollama y otras dependencias
+RUN git clone https://github.com/ollama/ollama.git /ollama
+
+# Reemplazamos la configuración para gfx803
+WORKDIR /ollama
+RUN sed -i 's/var RocmComputeMajorMin = "9"/var RocmComputeMajorMin = "8"/' discover/gpu.go && \
+    sed -i 's/find_package(hip REQUIRED)/#find_package(hip REQUIRED)/' CMakeLists.txt && \
+    true
+
+# Instalamos las dependencias de Python
+COPY requirements.txt /ollama/requirements.txt
+RUN pip install -r /ollama/requirements.txt
+
+# Compilamos Ollama para gfx803
+RUN cmake -B build -DAMDGPU_TARGETS="${ROCM_ARCH}" && \
+    cmake --build build -- -j${MAX_JOBS} && \
+    go generate ./... && \
+    go build -p ${MAX_JOBS} . && \
+    true
+
+# Configuramos el script de inicio
+RUN touch /ollama/ol_serve.sh && \
+    echo "#!/bin/bash" > /ollama/ol_serve.sh && \
+    echo "./ollama serve" >> /ollama/ol_serve.sh && \
+    chmod +x /ollama/ol_serve.sh
+
+# Exponemos los puertos necesarios
+EXPOSE 8080 11434
+
+# Ejecutamos el script de inicio de Ollama
+ENTRYPOINT ["/ollama/ol_serve.sh"]

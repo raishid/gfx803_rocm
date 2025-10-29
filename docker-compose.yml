@@ -1,29 +1,63 @@
+# services:
+#   ollama_rocm64:
+#     build:
+#       context: .
+#       dockerfile: Dockerfile_rocm64_ollama
+#     container_name: rocm64_ollama_090
+#     ports:
+#       - "8080:8080"
+#       - "11434:11434"
+#     devices:
+#       - "/dev/kfd:/dev/kfd"
+#       - "/dev/dri:/dev/dri"
+#     group_add:
+#       - "render"
+#       - "video"
+#     ipc: host
+#     cap_add:
+#       - SYS_PTRACE
+#     security_opt:
+#       - seccomp=unconfined
+#     environment:
+#       HSA_OVERRIDE_GFX_VERSION: "8.0.3"
+#       ROC_ENABLE_PRE_VEGA: "1"
+#       HIP_VISIBLE_DEVICES: "0"
+#     volumes:
+#       - ollama_data:/root/.ollama
+
+# volumes:
+#   ollama_data:
 services:
-  ollama_rocm64:
-    build:
+  ollama:
+    build: 
       context: .
-      dockerfile: Dockerfile_rocm64_ollama
+      dockerfile: Dockerfile_gpt
     container_name: rocm64_ollama_090
-    ports:
-      - "8080:8080"
-      - "11434:11434"
     devices:
-      - "/dev/kfd:/dev/kfd"
-      - "/dev/dri:/dev/dri"
+      - /dev/kfd
+      - /dev/dri
     group_add:
-      - "render"
-      - "video"
+      - video
+      - render
     ipc: host
     cap_add:
       - SYS_PTRACE
     security_opt:
       - seccomp=unconfined
-    environment:
-      HSA_OVERRIDE_GFX_VERSION: "8.0.3"
-      ROC_ENABLE_PRE_VEGA: "1"
-      HIP_VISIBLE_DEVICES: "0"
+    ports:
+      - "8080:8080"
+      - "11434:11434"
     volumes:
-      - ollama_data:/root/.ollama
+      - .:/ollama
+    environment:
+      OLLAMA_HOST: "127.0.0.1"
+      MAX_JOBS: 14
+      ROCM_ARCH: gfx803
+      USE_ROCM: 1
+      USE_CUDA: 0
+      JOBLIB_START_METHOD: thread
+      DEBIAN_FRONTEND: noninteractive
+    stdin_open: true
+    tty: true
+    command: /ollama/ol_serve.sh
 
-volumes:
-  ollama_data:
