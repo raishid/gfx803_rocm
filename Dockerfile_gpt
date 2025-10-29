@@ -1,27 +1,11 @@
-# Usamos una imagen base con ROCm y Ubuntu 24.04
-FROM rocm/dev-ubuntu-24.04:6.4-complete
+# Usamos una imagen base con Ubuntu 24.04
+FROM ubuntu:24.04
 
-# Actualizamos el sistema
-RUN apt-get update && apt-get upgrade -y
+# Establecemos las variables de entorno para el contenedor
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Crear directorio para las claves GPG
-RUN sudo mkdir -p /etc/apt/keyrings
-
-# Descargar y agregar la nueva clave GPG de ROCm
-RUN curl -fsSL https://repo.radeon.com/rocm/rocm.gpg.key | \
-    gpg --dearmor | \
-    sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
-
-# Agregar el repositorio de ROCm a las fuentes APT
-RUN echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/7.0.2 noble main" | \
-    sudo tee /etc/apt/sources.list.d/rocm.list > /dev/null
-
-# Instalamos las dependencias necesarias
-RUN apt-get update && apt-get install -y \
-    cmake \
-    make \
-    git \
-    wget \
+# Actualizamos el sistema e instalamos dependencias básicas
+RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     build-essential \
     libvulkan-dev \
     python3-pip \
@@ -30,55 +14,57 @@ RUN apt-get update && apt-get install -y \
     libtcmalloc-minimal4 \
     libprotobuf-dev \
     clang \
-    gcc && rm -rf /var/lib/apt/lists/*
+    gcc \
+    wget \
+    git \
+    cmake \
+    make \
+    software-properties-common
 
-# Instalación de ROCm DKMS
-RUN apt-get update && apt-get install -y rocm-dkms
+# Creamos el directorio para las claves GPG
+RUN mkdir -p /etc/apt/keyrings
 
-# Variables de entorno para ROCm y Vulkan
-ENV MAX_JOBS=14
-ENV ROCM_ARCH=gfx803
-ENV PYTORCH_ROCM_ARCH=gfx803
-ENV TORCH_BLAS_PREFER_HIPBLASLT=0
-ENV ROC_ENABLE_PRE_VEGA=1
-ENV USE_CUDA=0
-ENV USE_ROCM=1
-ENV USE_NINJA=1
-ENV FORCE_CUDA=1
-ENV JOBLIB_START_METHOD=thread
-ENV DEBIAN_FRONTEND=noninteractive
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONENCODING=UTF-8
-ENV REQS_FILE=requirements.txt
-ENV PIP_ROOT_USER_ACTION=ignore
+# Descargar y agregar la clave GPG de ROCm
+RUN curl -fsSL https://repo.radeon.com/rocm/rocm.asc | gpg --dearmor | tee /etc/apt/keyrings/rocm.asc > /dev/null
+
+# Agregar el repositorio de ROCm para Ubuntu 24.04
+RUN echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.asc] https://repo.radeon.com/rocm/apt/7.0.2 noble main" | tee /etc/apt/sources.list.d/rocm.list > /dev/null
+
+# Actualizamos APT y añadimos los paquetes de ROCm
+RUN apt-get update && apt-get install -y \
+    rocm-dkms \
+    rocm-dev \
+    rocm-utils
+
+# Instalamos Python y las dependencias de Ollama
+COPY requirements.txt /tmp/requirements.txt
+RUN pip3 install -r /tmp/requirements.txt
 
 # Clonamos el repositorio de Ollama
 RUN git clone https://github.com/ollama/ollama.git /ollama
 
-# Reemplazamos la configuración para gfx803
+# Reemplazamos la configuración para gfx803 (RX 580)
 WORKDIR /ollama
 RUN sed -i 's/var RocmComputeMajorMin = "9"/var RocmComputeMajorMin = "8"/' discover/gpu.go && \
     sed -i 's/find_package(hip REQUIRED)/#find_package(hip REQUIRED)/' CMakeLists.txt && \
     true
 
-# Instalamos las dependencias de Python
-COPY requirements.txt /ollama/requirements.txt
-RUN pip install -r /ollama/requirements.txt
+# Instalamos las dependencias de Python necesarias para Ollama
+RUN pip3 install -r /ollama/requirements.txt
 
-# Compilamos Ollama para gfx803
-RUN cmake -B build -DAMDGPU_TARGETS="${ROCM_ARCH}" && \
-    cmake --build build -- -j${MAX_JOBS} && \
+# Compilamos Ollama para la GPU RX 580
+RUN cmake -B build -DAMDGPU_TARGETS="gfx803" && \
+    cmake --build build -- -j$(nproc) && \
     go generate ./... && \
-    go build -p ${MAX_JOBS} . && \
+    go build -p $(nproc) . && \
     true
 
-# Configuramos el script de inicio
-RUN touch /ollama/ol_serve.sh && \
-    echo "#!/bin/bash" > /ollama/ol_serve.sh && \
+# Creamos el script de inicio
+RUN echo "#!/bin/bash" > /ollama/ol_serve.sh && \
     echo "./ollama serve" >> /ollama/ol_serve.sh && \
     chmod +x /ollama/ol_serve.sh
 
-# Exponemos los puertos necesarios
+# Exponemos los puertos necesarios para la comunicación
 EXPOSE 8080 11434
 
 # Ejecutamos el script de inicio de Ollama
