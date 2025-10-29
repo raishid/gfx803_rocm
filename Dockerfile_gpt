@@ -9,7 +9,7 @@ RUN apt-get install -y software-properties-common && \
     add-apt-repository ppa:kisak/kisak-mesa && \
     apt-get update
 
-# Instalamos las dependencias necesarias, asegurándonos de que Vulkan y las herramientas estén disponibles
+# Instalamos las dependencias necesarias, eliminando `vulkan-utils` y `libvulkan-tools`
 RUN apt-get install -y \
     cmake \
     make \
@@ -17,13 +17,11 @@ RUN apt-get install -y \
     wget \
     build-essential \
     libvulkan-dev \
-    vulkan-utils \
     python3-pip \
     python3-dev \
     libcurl4-openssl-dev \
     libtcmalloc-minimal4 \
     libprotobuf-dev \
-    libvulkan-tools \
     clang \
     gcc && rm -rf /var/lib/apt/lists/*
 
