@@ -1,4 +1,4 @@
-# Utilizamos la imagen oficial de ROCm para Ubuntu 24.04
+# Usamos la imagen base de ROCm para Ubuntu 24.04
 FROM rocm/dev-ubuntu-24.04:6.4-complete
 
 # Establecemos las variables de entorno para el contenedor
@@ -19,11 +19,18 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     git \
     cmake \
     make \
-    software-properties-common
+    software-properties-common \
+    python3-venv
 
-# Instalamos las dependencias de Python necesarias
+# Creamos un entorno virtual de Python
+RUN python3 -m venv /opt/venv
+
+# Activamos el entorno virtual y aseguramos que pip esté actualizado
+RUN /opt/venv/bin/pip install --upgrade pip
+
+# Instalamos las dependencias de Python dentro del entorno virtual
 COPY requirements.txt /tmp/requirements.txt
-RUN pip3 install -r /tmp/requirements.txt
+RUN /opt/venv/bin/pip install -r /tmp/requirements.txt
 
 # Clonamos el repositorio de Ollama
 RUN git clone https://github.com/ollama/ollama.git /ollama
@@ -35,7 +42,7 @@ RUN sed -i 's/var RocmComputeMajorMin = "9"/var RocmComputeMajorMin = "8"/' disc
     true
 
 # Instalamos las dependencias de Python necesarias para Ollama
-RUN pip3 install -r /ollama/requirements.txt
+RUN /opt/venv/bin/pip install -r /ollama/requirements.txt
 
 # Compilamos Ollama para la GPU RX 580
 RUN cmake -B build -DAMDGPU_TARGETS="gfx803" && \
