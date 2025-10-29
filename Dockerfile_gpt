@@ -30,6 +30,10 @@ RUN /opt/venv/bin/pip install --upgrade pip
 
 # Instalamos las dependencias de Python dentro del entorno virtual
 COPY requirements.txt /tmp/requirements.txt
+
+# Modificamos requirements.txt para incluir PyTorch desde el índice de ROCm
+RUN echo "--extra-index-url https://download.pytorch.org/whl/rocm5.2/torch_stable.html" >> /tmp/requirements.txt
+
 RUN /opt/venv/bin/pip install -r /tmp/requirements.txt
 
 # Clonamos el repositorio de Ollama
