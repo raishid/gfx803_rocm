@@ -25,8 +25,13 @@ RUN apt-get install -y \
     clang \
     gcc && rm -rf /var/lib/apt/lists/*
 
+# Intentamos con una URL alternativa para ROCm
+RUN echo "deb [arch=amd64] https://repo.radeon.com/rocm/apt/deb/ ubuntu main" | tee /etc/apt/sources.list.d/rocm.list
+
+# Realizamos la actualización e instalación de ROCm
+RUN apt-get update && apt-get install -y rocm-dkms
+
 # Instalación de CUDA y ROCm
-RUN echo "deb [arch=amd64] https://repo.radeon.com/rocm/apt/deb/ stable main" | tee /etc/apt/sources.list.d/rocm.list
 RUN apt-get update && apt-get install -y rocm-dkms
 
 # Variables de entorno para ROCm y Vulkan
