@@ -1,16 +1,23 @@
-# Utilizamos una imagen base con ROCm y Ubuntu 24.04
+# Usamos una imagen base con ROCm y Ubuntu 24.04
 FROM rocm/dev-ubuntu-24.04:6.4-complete
 
-# Actualizamos el sistema e instalamos las dependencias necesarias
+# Actualizamos el sistema
 RUN apt-get update && apt-get upgrade -y
 
-# Agregamos el repositorio Vulkan explícitamente para asegurarnos de que los paquetes estén disponibles
-RUN apt-get install -y software-properties-common && \
-    add-apt-repository ppa:kisak/kisak-mesa && \
-    apt-get update
+# Crear directorio para las claves GPG
+RUN sudo mkdir -p /etc/apt/keyrings
 
-# Instalamos las dependencias necesarias, eliminando `vulkan-utils` y `libvulkan-tools`
-RUN apt-get install -y \
+# Descargar y agregar la nueva clave GPG de ROCm
+RUN curl -fsSL https://repo.radeon.com/rocm/rocm.gpg.key | \
+    gpg --dearmor | \
+    sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
+
+# Agregar el repositorio de ROCm a las fuentes APT
+RUN echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/7.0.2 noble main" | \
+    sudo tee /etc/apt/sources.list.d/rocm.list > /dev/null
+
+# Instalamos las dependencias necesarias
+RUN apt-get update && apt-get install -y \
     cmake \
     make \
     git \
@@ -25,13 +32,7 @@ RUN apt-get install -y \
     clang \
     gcc && rm -rf /var/lib/apt/lists/*
 
-# Intentamos con una URL alternativa para ROCm
-RUN echo "deb [arch=amd64] https://repo.radeon.com/rocm/apt/deb/ ubuntu main" | tee /etc/apt/sources.list.d/rocm.list
-
-# Realizamos la actualización e instalación de ROCm
-RUN apt-get update && apt-get install -y rocm-dkms
-
-# Instalación de CUDA y ROCm
+# Instalación de ROCm DKMS
 RUN apt-get update && apt-get install -y rocm-dkms
 
 # Variables de entorno para ROCm y Vulkan
@@ -51,7 +52,7 @@ ENV PYTHONENCODING=UTF-8
 ENV REQS_FILE=requirements.txt
 ENV PIP_ROOT_USER_ACTION=ignore
 
-# Clonamos el repositorio de Ollama y otras dependencias
+# Clonamos el repositorio de Ollama
 RUN git clone https://github.com/ollama/ollama.git /ollama
 
 # Reemplazamos la configuración para gfx803
