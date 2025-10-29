@@ -1,10 +1,10 @@
-# Usamos una imagen base con Ubuntu 24.04
-FROM ubuntu:24.04
+# Utilizamos la imagen oficial de ROCm para Ubuntu 24.04
+FROM rocm/dev-ubuntu-24.04:6.4-complete
 
 # Establecemos las variables de entorno para el contenedor
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Actualizamos el sistema e instalamos dependencias básicas
+# Actualizamos el sistema e instalamos las dependencias necesarias
 RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     build-essential \
     libvulkan-dev \
@@ -21,22 +21,7 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     make \
     software-properties-common
 
-# Creamos el directorio para las claves GPG
-RUN mkdir -p /etc/apt/keyrings
-
-# Descargar y agregar la clave GPG de ROCm
-RUN curl -fsSL https://repo.radeon.com/rocm/rocm.asc | gpg --dearmor | tee /etc/apt/keyrings/rocm.asc > /dev/null
-
-# Agregar el repositorio de ROCm para Ubuntu 24.04
-RUN echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.asc] https://repo.radeon.com/rocm/apt/7.0.2 noble main" | tee /etc/apt/sources.list.d/rocm.list > /dev/null
-
-# Actualizamos APT y añadimos los paquetes de ROCm
-RUN apt-get update && apt-get install -y \
-    rocm-dkms \
-    rocm-dev \
-    rocm-utils
-
-# Instalamos Python y las dependencias de Ollama
+# Instalamos las dependencias de Python necesarias
 COPY requirements.txt /tmp/requirements.txt
 RUN pip3 install -r /tmp/requirements.txt
 
