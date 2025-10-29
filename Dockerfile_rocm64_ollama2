@@ -50,7 +50,6 @@ RUN echo "BUILDING Ollama for gfx803 (HIP backend)" && \
     cp build/bin/ollama /ollama/ollama && \
     true
 
-
 ### Create a best practice Shell Script to start Ollama
 RUN touch ol_serve.sh && \
     echo "#!/bin/bash" > ol_serve.sh &&\

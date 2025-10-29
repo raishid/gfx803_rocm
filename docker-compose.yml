@@ -2,7 +2,7 @@ services:
   ollama_rocm64:
     build:
       context: .
-      dockerfile: Dockerfile_rocm64_ollama2
+      dockerfile: Dockerfile_rocm64_ollama
     container_name: rocm64_ollama_090
     ports:
       - "8080:8080"
