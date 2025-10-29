@@ -1,8 +1,13 @@
 # Utilizamos una imagen base con ROCm y Ubuntu 24.04
 FROM rocm/dev-ubuntu-24.04:6.4-complete
 
-# Actualizamos el sistema
+# Actualizamos el sistema e instalamos las dependencias necesarias
 RUN apt-get update && apt-get upgrade -y
+
+# Agregar repositorio Vulkan explícitamente para asegurarnos de que los paquetes estén disponibles
+RUN sudo apt-get install -y software-properties-common && \
+    sudo add-apt-repository ppa:kisak/kisak-mesa && \
+    sudo apt-get update
 
 # Instalamos las dependencias necesarias
 RUN apt-get install -y \
@@ -20,10 +25,9 @@ RUN apt-get install -y \
     libprotobuf-dev \
     libvulkan-tools \
     clang \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
+    gcc && rm -rf /var/lib/apt/lists/*
 
-# Instalar CUDA y ROCm
+# Instalación de CUDA y ROCm
 RUN echo "deb [arch=amd64] https://repo.radeon.com/rocm/apt/deb/ stable main" | tee /etc/apt/sources.list.d/rocm.list
 RUN apt-get update && apt-get install -y rocm-dkms
 
