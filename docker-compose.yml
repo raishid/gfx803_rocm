@@ -11,6 +11,7 @@ services:
       - "/dev/kfd:/dev/kfd"
       - "/dev/dri:/dev/dri"
     group_add:
+      - "render"
       - "video"
     ipc: host
     cap_add:
