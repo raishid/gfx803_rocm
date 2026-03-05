@@ -4,6 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile_rocm64_ollama
     container_name: rocm64_ollama_090
+    restart: unless-stopped
     ports:
       - "8080:8080"
       - "11434:11434"
@@ -24,7 +25,12 @@ services:
       HIP_VISIBLE_DEVICES: "0"
     volumes:
       - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "pgrep", "ollama"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
 
 volumes:
   ollama_data:
-
