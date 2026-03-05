@@ -25,6 +25,7 @@ services:
       HIP_VISIBLE_DEVICES: "0"
     volumes:
       - ollama_data:/root/.ollama
+      - openwebui_data:/root/.local/share/open-webui
     healthcheck:
       test: ["CMD", "pgrep", "ollama"]
       interval: 15s
@@ -34,3 +35,4 @@ services:
 
 volumes:
   ollama_data:
+  openwebui_data:
